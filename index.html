@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ShopSphere – E-Commerce Store</title>
+<style>
+  :root{
+    --bg:#f5f7fb; --card:#fff; --text:#1c2333; --muted:#6b7280; --primary:#2563eb;
+    --primary-d:#1d4ed8; --accent:#f59e0b; --danger:#ef4444; --ok:#16a34a; --border:#e5e7eb;
+    --radius:14px; --shadow:0 4px 18px rgba(20,30,60,.08);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);line-height:1.5}
+  button{font:inherit;cursor:pointer;border:none}
+  img{max-width:100%;display:block}
+
+  /* Navbar */
+  .navbar{position:sticky;top:0;z-index:30;background:#fff;border-bottom:1px solid var(--border);
+    display:flex;align-items:center;gap:16px;padding:12px 24px}
+  .brand{font-weight:800;font-size:1.3rem;color:var(--primary);white-space:nowrap}
+  .search{flex:1;max-width:520px;margin:0 auto}
+  .search input{width:100%;padding:10px 16px;border:1px solid var(--border);border-radius:999px;font:inherit;outline:none;background:var(--bg)}
+  .search input:focus{border-color:var(--primary);background:#fff}
+  .cart-btn{position:relative;background:var(--primary);color:#fff;padding:10px 16px;border-radius:999px;font-weight:600;display:flex;gap:8px;align-items:center}
+  .cart-btn:hover{background:var(--primary-d)}
+  .badge-count{background:var(--accent);color:#111;border-radius:999px;min-width:22px;height:22px;display:grid;place-items:center;font-size:.78rem;font-weight:800;padding:0 6px}
+
+  /* Toolbar */
+  .container{max-width:1200px;margin:0 auto;padding:24px}
+  .toolbar{display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-items:center;margin-bottom:20px}
+  .filters{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{background:#fff;border:1px solid var(--border);padding:8px 16px;border-radius:999px;font-weight:600;color:var(--muted)}
+  .chip:hover{border-color:var(--primary);color:var(--primary)}
+  .chip.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+  select{padding:8px 12px;border:1px solid var(--border);border-radius:10px;font:inherit;background:#fff}
+  .result-info{color:var(--muted);font-size:.9rem;margin-bottom:12px}
+
+  /* Product grid */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:20px}
+  .card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);display:flex;flex-direction:column;overflow:hidden;position:relative;transition:transform .2s}
+  .card:hover{transform:translateY(-4px)}
+  .card .img{background:#fff;padding:18px;height:220px;display:grid;place-items:center}
+  .card .img img{max-height:100%;object-fit:contain}
+  .card .body{padding:14px 16px 16px;display:flex;flex-direction:column;gap:8px;flex:1}
+  .cat{font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700}
+  .title{font-weight:600;font-size:.95rem;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.8em}
+  .rating{display:flex;align-items:center;gap:6px;font-size:.85rem;color:var(--muted)}
+  .stars{color:var(--accent);letter-spacing:1px}
+  .bottom{margin-top:auto;display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .price{font-size:1.2rem;font-weight:800}
+  .add{background:var(--primary);color:#fff;padding:8px 14px;border-radius:10px;font-weight:600}
+  .add:hover{background:var(--primary-d)}
+  .badges{position:absolute;top:10px;left:10px;display:flex;flex-direction:column;gap:6px}
+  .tag{font-size:.7rem;font-weight:800;padding:3px 9px;border-radius:999px;color:#fff}
+  .tag.best{background:var(--danger)} .tag.top{background:var(--ok)} .tag.deal{background:var(--accent);color:#111} .tag.new{background:#7c3aed}
+
+  /* Skeleton, empty, error */
+  .skeleton{height:370px;border-radius:var(--radius);background:linear-gradient(90deg,#eceff4 25%,#f7f8fb 50%,#eceff4 75%);background-size:200% 100%;animation:sh 1.2s infinite}
+  @keyframes sh{to{background-position:-200% 0}}
+  .state{text-align:center;padding:60px 20px;color:var(--muted)}
+  .state button{margin-top:12px;background:var(--primary);color:#fff;padding:10px 18px;border-radius:10px;font-weight:600}
+
+  /* Drawer */
+  .overlay{position:fixed;inset:0;background:rgba(10,15,30,.5);opacity:0;pointer-events:none;transition:.25s;z-index:40}
+  .overlay.show{opacity:1;pointer-events:auto}
+  .drawer{position:fixed;top:0;right:0;height:100%;width:min(420px,100%);background:#fff;z-index:50;transform:translateX(100%);
+    transition:transform .3s ease;display:flex;flex-direction:column;box-shadow:-8px 0 30px rgba(0,0,0,.15)}
+  .drawer.open{transform:translateX(0)}
+  .drawer header{display:flex;justify-content:space-between;align-items:center;padding:18px 20px;border-bottom:1px solid var(--border)}
+  .drawer header h2{font-size:1.2rem}
+  .icon-btn{background:var(--bg);width:34px;height:34px;border-radius:50%;font-size:1.1rem}
+  .items{flex:1;overflow-y:auto;padding:12px 20px}
+  .item{display:grid;grid-template-columns:64px 1fr auto;gap:12px;padding:14px 0;border-bottom:1px solid var(--border);align-items:center}
+  .item img{width:64px;height:64px;object-fit:contain}
+  .item h4{font-size:.88rem;font-weight:600;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .item .unit{font-size:.8rem;color:var(--muted)}
+  .qty{display:flex;align-items:center;gap:8px;margin-top:6px}
+  .qty button{width:26px;height:26px;border-radius:8px;background:var(--bg);font-weight:800}
+  .qty button:hover{background:var(--border)}
+  .line{text-align:right;font-weight:700}
+  .remove{background:none;color:var(--danger);font-size:.78rem;margin-top:6px;font-weight:600}
+  .summary{border-top:1px solid var(--border);padding:16px 20px;background:#fafbfd}
+  .row{display:flex;justify-content:space-between;margin-bottom:6px;font-size:.92rem;color:var(--muted)}
+  .row.total{color:var(--text);font-size:1.15rem;font-weight:800;margin-top:8px}
+  .free-note{font-size:.78rem;color:var(--ok);margin-bottom:8px}
+  .checkout{width:100%;margin-top:12px;background:var(--ok);color:#fff;padding:13px;border-radius:12px;font-weight:700;font-size:1rem}
+  .checkout:disabled{background:#cbd5e1;cursor:not-allowed}
+  .clear{width:100%;margin-top:8px;background:none;color:var(--muted);font-size:.85rem}
+
+  /* Modal */
+  .modal{position:fixed;inset:0;z-index:60;display:none;place-items:center;background:rgba(10,15,30,.55);padding:16px}
+  .modal.show{display:grid}
+  .modal-box{background:#fff;border-radius:18px;padding:28px;width:min(460px,100%);max-height:92vh;overflow-y:auto}
+  .modal-box h2{margin-bottom:14px}
+  .field{margin-bottom:12px}
+  .field label{display:block;font-size:.82rem;font-weight:600;margin-bottom:4px}
+  .field input{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;font:inherit}
+  .field input:focus{outline:none;border-color:var(--primary)}
+  .field .err{color:var(--danger);font-size:.76rem;display:none}
+  .field.invalid input{border-color:var(--danger)} .field.invalid .err{display:block}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .success{text-align:center}
+  .tick{width:70px;height:70px;border-radius:50%;background:#dcfce7;color:var(--ok);display:grid;place-items:center;font-size:2.2rem;margin:0 auto 14px}
+  .order-id{background:var(--bg);padding:8px 14px;border-radius:10px;display:inline-block;font-weight:700;margin:8px 0 14px}
+
+  /* Toast */
+  .toast{position:fixed;bottom:24px;left:50%;transform:translate(-50%,120px);background:#111827;color:#fff;padding:12px 20px;border-radius:12px;z-index:80;transition:.3s;font-size:.9rem}
+  .toast.show{transform:translate(-50%,0)}
+
+  @media (max-width:640px){
+    .navbar{flex-wrap:wrap;padding:10px 14px} .search{order:3;flex-basis:100%;max-width:none}
+    .container{padding:16px} .grid{grid-template-columns:repeat(2,1fr);gap:12px}
+    .card .img{height:160px} .two{grid-template-columns:1fr}
+    .cart-btn span.label{display:none}
+  }
+  @media (max-width:380px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="brand">🛍️ ShopSphere</div>
+  <div class="search"><input id="search" type="search" placeholder="Search products..." aria-label="Search products"></div>
+  <button class="cart-btn" id="openCart" aria-label="Open cart">🛒 <span class="label">Cart</span><span class="badge-count" id="cartCount">0</span></button>
+</nav>
+
+<main class="container">
+  <div class="toolbar">
+    <div class="filters" id="filters">
+      <button class="chip active" data-cat="all">All</button>
+      <button class="chip" data-cat="electronics">Electronics</button>
+      <button class="chip" data-cat="jewelry">Jewelry</button>
+      <button class="chip" data-cat="clothing">Clothing</button>
+    </div>
+    <select id="sort" aria-label="Sort products">
+      <option value="default">Sort: Featured</option>
+      <option value="price-asc">Price: Low → High</option>
+      <option value="price-desc">Price: High → Low</option>
+      <option value="rating">Top Rated</option>
+    </select>
+  </div>
+  <div class="result-info" id="resultInfo"></div>
+  <section class="grid" id="grid" aria-live="polite"></section>
+</main>
+
+<!-- Cart drawer -->
+<div class="overlay" id="overlay"></div>
+<aside class="drawer" id="drawer" aria-label="Shopping cart">
+  <header><h2>Your Cart</h2><button class="icon-btn" id="closeCart" aria-label="Close cart">✕</button></header>
+  <div class="items" id="cartItems"></div>
+  <div class="summary" id="summary">
+    <div class="row"><span>Subtotal</span><span id="subtotal">$0.00</span></div>
+    <div class="row"><span>Tax (8%)</span><span id="tax">$0.00</span></div>
+    <div class="row"><span>Shipping</span><span id="shipping">$0.00</span></div>
+    <div class="free-note" id="freeNote"></div>
+    <div class="row total"><span>Total</span><span id="total">$0.00</span></div>
+    <button class="checkout" id="checkoutBtn">Proceed to Checkout</button>
+    <button class="clear" id="clearCart">Clear cart</button>
+  </div>
+</aside>
+
+<!-- Checkout modal -->
+<div class="modal" id="modal">
+  <div class="modal-box" id="modalBox"></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+(() => {
+  'use strict';
+
+  /* ---------- Config ---------- */
+  const API_URL = 'https://fakestoreapi.com/products';
+  const TAX_RATE = 0.08;
+  const SHIPPING_FLAT = 5.99;
+  const FREE_SHIPPING_OVER = 100;
+  const STORAGE_KEY = 'shopsphere_cart_v1';
+
+  /* ---------- State ---------- */
+  const state = {
+    products: [],
+    category: 'all',
+    query: '',
+    sort: 'default',
+    cart: loadCart(),   // [{id, qty}]
+    loading: true,
+    error: null
+  };
+
+  /* ---------- DOM ---------- */
+  const $ = id => document.getElementById(id);
+  const grid = $('grid'), resultInfo = $('resultInfo'), cartCount = $('cartCount');
+  const drawer = $('drawer'), overlay = $('overlay'), cartItems = $('cartItems');
+  const modal = $('modal'), modalBox = $('modalBox'), toastEl = $('toast');
+
+  /* ---------- Helpers ---------- */
+  const money = n => '$' + n.toFixed(2);
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const round2 = n => Math.round(n * 100) / 100;
+
+  function mapCategory(c){
+    if (c === 'electronics') return 'electronics';
+    if (c === 'jewelery' || c === 'jewelry') return 'jewelry';
+    return 'clothing'; // men's + women's clothing
+  }
+  const catLabel = c => ({electronics:'Electronics', jewelry:'Jewelry', clothing:'Clothing'}[c]);
+
+  function loadCart(){
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch { return []; }
+  }
+  function saveCart(){
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state.cart)); } catch {}
+  }
+  const getProduct = id => state.products.find(p => p.id === id);
+
+  function stars(rate){
+    const full = Math.round(rate);
+    return '★'.repeat(full) + '☆'.repeat(5 - full);
+  }
+
+  function badgesFor(p){
+    const b = [];
+    if (p.rating.count >= 300) b.push('<span class="tag best">🔥 Best Seller</span>');
+    if (p.rating.rate >= 4.5) b.push('<span class="tag top">⭐ Top Rated</span>');
+    if (p.price < 15) b.push('<span class="tag deal">💰 Great Deal</span>');
+    if (p.id % 7 === 0) b.push('<span class="tag new">✨ New</span>');
+    return b.slice(0, 2).join('');
+  }
+
+  let toastTimer;
+  function toast(msg){
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toastEl.classList.remove('show'), 1800);
+  }
+
+  /* ---------- Data fetching ---------- */
+  async function fetchProducts(){
+    state.loading = true; state.error = null; renderProducts();
+    try {
+      const res = await fetch(API_URL);
+      if (!res.ok) throw new Error('Server responded with ' + res.status);
+      const data = await res.json();
+      state.products = data.map(p => ({...p, group: mapCategory(p.category)}));
+      // drop cart lines whose products no longer exist
+      state.cart = state.cart.filter(l => getProduct(l.id));
+      saveCart();
+    } catch (e) {
+      state.error = e.message || 'Failed to load products';
+    } finally {
+      state.loading = false;
+      renderProducts(); renderCart();
+    }
+  }
+
+  /* ---------- Product rendering ---------- */
+  function filteredProducts(){
+    const q = state.query.trim().toLowerCase();
+    let list = state.products.filter(p =>
+      (state.category === 'all' || p.group === state.category) &&
+      (!q || p.title.toLowerCase().includes(q) || p.description.toLowerCase().includes(q))
+    );
+    switch (state.sort){
+      case 'price-asc':  list.sort((a,b) => a.price - b.price); break;
+      case 'price-desc': list.sort((a,b) => b.price - a.price); break;
+      case 'rating':     list.sort((a,b) => b.rating.rate - a.rating.rate); break;
+    }
+    return list;
+  }
+
+  function renderProducts(){
+    if (state.loading){
+      resultInfo.textContent = 'Loading products…';
+      grid.innerHTML = Array.from({length:8}, () => '<div class="skeleton"></div>').join('');
+      return;
+    }
+    if (state.error){
+      resultInfo.textContent = '';
+      grid.innerHTML = `<div class="state" style="grid-column:1/-1"><h3>😕 Couldn't load products</h3><p>${esc(state.error)}</p><button id="retry">Try again</button></div>`;
+      $('retry').onclick = fetchProducts;
+      return;
+    }
+    const list = filteredProducts();
+    resultInfo.textContent = `${list.length} product${list.length === 1 ? '' : 's'} found`;
+    if (!list.length){
+      grid.innerHTML = '<div class="state" style="grid-column:1/-1"><h3>No products match your search</h3><p>Try a different keyword or category.</p></div>';
+      return;
+    }
+    grid.innerHTML = list.map(p => `
+      <article class="card">
+        <div class="badges">${badgesFor(p)}</div>
+        <div class="img"><img src="${esc(p.image)}" alt="${esc(p.title)}" loading="lazy"></div>
+        <div class="body">
+          <span class="cat">${catLabel(p.group)}</span>
+          <h3 class="title" title="${esc(p.title)}">${esc(p.title)}</h3>
+          <div class="rating"><span class="stars">${stars(p.rating.rate)}</span>${p.rating.rate} (${p.rating.count})</div>
+          <div class="bottom">
+            <span class="price">${money(p.price)}</span>
+            <button class="add" data-add="${p.id}">Add to Cart</button>
+          </div>
+        </div>
+      </article>`).join('');
+  }
+
+  /* ---------- Cart actions ---------- */
+  function addToCart(id){
+    const line = state.cart.find(l => l.id === id);
+    if (line) line.qty++; else state.cart.push({id, qty:1});
+    saveCart(); renderCart();
+    toast('Added to cart ✔');
+  }
+  function removeFromCart(id){
+    state.cart = state.cart.filter(l => l.id !== id);
+    saveCart(); renderCart();
+  }
+  function updateQuantity(id, delta){
+    const line = state.cart.find(l => l.id === id);
+    if (!line) return;
+    line.qty += delta;
+    if (line.qty <= 0) return removeFromCart(id);
+    saveCart(); renderCart();
+  }
+  function calculateTotal(){
+    const subtotal = round2(state.cart.reduce((s,l) => {
+      const p = getProduct(l.id); return s + (p ? p.price * l.qty : 0);
+    }, 0));
+    const tax = round2(subtotal * TAX_RATE);
+    const shipping = subtotal === 0 ? 0 : (subtotal >= FREE_SHIPPING_OVER ? 0 : SHIPPING_FLAT);
+    return { subtotal, tax, shipping, total: round2(subtotal + tax + shipping) };
+  }
+  const itemCount = () => state.cart.reduce((s,l) => s + l.qty, 0);
+
+  function renderCart(){
+    cartCount.textContent = itemCount();
+    const t = calculateTotal();
+    $('subtotal').textContent = money(t.subtotal);
+    $('tax').textContent = money(t.tax);
+    $('shipping').textContent = t.shipping === 0 && t.subtotal > 0 ? 'FREE' : money(t.shipping);
+    $('total').textContent = money(t.total);
+    $('checkoutBtn').disabled = state.cart.length === 0;
+    $('clearCart').style.display = state.cart.length ? 'block' : 'none';
+    $('freeNote').textContent = t.subtotal > 0 && t.subtotal < FREE_SHIPPING_OVER
+      ? `Add ${money(FREE_SHIPPING_OVER - t.subtotal)} more for free shipping!` : (t.subtotal >= FREE_SHIPPING_OVER ? '🎉 You unlocked free shipping!' : '');
+
+    if (!state.cart.length){
+      cartItems.innerHTML = '<div class="state"><h3>🛒 Your cart is empty</h3><p>Add something you like!</p></div>';
+      return;
+    }
+    cartItems.innerHTML = state.cart.map(l => {
+      const p = getProduct(l.id); if (!p) return '';
+      return `
+      <div class="item">
+        <img src="${esc(p.image)}" alt="">
+        <div>
+          <h4>${esc(p.title)}</h4>
+          <div class="unit">${money(p.price)} each</div>
+          <div class="qty">
+            <button data-dec="${p.id}" aria-label="Decrease quantity">−</button>
+            <span>${l.qty}</span>
+            <button data-inc="${p.id}" aria-label="Increase quantity">+</button>
+          </div>
+        </div>
+        <div class="line">${money(p.price * l.qty)}<br><button class="remove" data-rm="${p.id}">Remove</button></div>
+      </div>`;
+    }).join('');
+  }
+
+  /* ---------- Drawer ---------- */
+  function openDrawer(){ drawer.classList.add('open'); overlay.classList.add('show'); document.body.style.overflow='hidden'; }
+  function closeDrawer(){ drawer.classList.remove('open'); overlay.classList.remove('show'); document.body.style.overflow=''; }
+
+  /* ---------- Checkout modal ---------- */
+  function openCheckout(){
+    const t = calculateTotal();
+    modalBox.innerHTML = `
+      <h2>Checkout</h2>
+      <p style="color:var(--muted);margin-bottom:14px">${itemCount()} item(s) · Total <strong>${money(t.total)}</strong></p>
+      <form id="checkoutForm" novalidate>
+        <div class="field"><label>Full name</label><input name="name" autocomplete="name"><div class="err">Please enter your name</div></div>
+        <div class="field"><label>Email</label><input name="email" type="email" autocomplete="email"><div class="err">Enter a valid email</div></div>
+        <div class="field"><label>Shipping address</label><input name="address" autocomplete="street-address"><div class="err">Please enter your address</div></div>
+        <div class="two">
+          <div class="field"><label>Card number (demo)</label><input name="card" inputmode="numeric" maxlength="19" placeholder="4242 4242 4242 4242"><div class="err">Enter 16 digits</div></div>
+          <div class="field"><label>Expiry</label><input name="exp" maxlength="5" placeholder="MM/YY"><div class="err">Use MM/YY</div></div>
+        </div>
+        <button class="checkout" type="submit">Place Order · ${money(t.total)}</button>
+        <button class="clear" type="button" id="cancelCheckout">Cancel</button>
+      </form>
+      <p style="font-size:.74rem;color:var(--muted);margin-top:10px">Simulated checkout — no real payment is processed.</p>`;
+    modal.classList.add('show');
+
+    const form = $('checkoutForm');
+    form.card.addEventListener('input', e => {
+      e.target.value = e.target.value.replace(/\D/g,'').slice(0,16).replace(/(.{4})/g,'$1 ').trim();
+    });
+    form.exp.addEventListener('input', e => {
+      let v = e.target.value.replace(/\D/g,'').slice(0,4);
+      if (v.length > 2) v = v.slice(0,2) + '/' + v.slice(2);
+      e.target.value = v;
+    });
+    $('cancelCheckout').onclick = closeModal;
+    form.addEventListener('submit', e => { e.preventDefault(); submitOrder(form); });
+  }
+  function closeModal(){ modal.classList.remove('show'); }
+
+  function submitOrder(form){
+    const f = n => form[n].value.trim();
+    const rules = {
+      name: f('name').length >= 2,
+      email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f('email')),
+      address: f('address').length >= 5,
+      card: f('card').replace(/\s/g,'').length === 16,
+      exp: /^(0[1-9]|1[0-2])\/\d{2}$/.test(f('exp'))
+    };
+    let ok = true;
+    for (const k in rules){
+      form[k].closest('.field').classList.toggle('invalid', !rules[k]);
+      if (!rules[k]) ok = false;
+    }
+    if (!ok) return;
+
+    const t = calculateTotal();
+    const orderId = 'ORD-' + Date.now().toString(36).toUpperCase();
+    const btn = form.querySelector('button[type=submit]');
+    btn.disabled = true; btn.textContent = 'Processing…';
+
+    setTimeout(() => {
+      modalBox.innerHTML = `
+        <div class="success">
+          <div class="tick">✓</div>
+          <h2>Order Confirmed!</h2>
+          <p>Thank you, ${esc(f('name'))}. A confirmation was sent to <strong>${esc(f('email'))}</strong>.</p>
+          <div class="order-id">${orderId}</div>
+          <div class="row"><span>Items</span><span>${itemCount()}</span></div>
+          <div class="row"><span>Subtotal</span><span>${money(t.subtotal)}</span></div>
+          <div class="row"><span>Tax</span><span>${money(t.tax)}</span></div>
+          <div class="row"><span>Shipping</span><span>${t.shipping ? money(t.shipping) : 'FREE'}</span></div>
+          <div class="row total"><span>Total paid</span><span>${money(t.total)}</span></div>
+          <button class="checkout" id="doneBtn">Continue Shopping</button>
+        </div>`;
+      state.cart = []; saveCart(); renderCart(); closeDrawer();
+      $('doneBtn').onclick = closeModal;
+    }, 1200);
+  }
+
+  /* ---------- Events ---------- */
+  $('filters').addEventListener('click', e => {
+    const b = e.target.closest('.chip'); if (!b) return;
+    document.querySelectorAll('.chip').forEach(c => c.classList.toggle('active', c === b));
+    state.category = b.dataset.cat; renderProducts();
+  });
+  let searchTimer;
+  $('search').addEventListener('input', e => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => { state.query = e.target.value; renderProducts(); }, 200);
+  });
+  $('sort').addEventListener('change', e => { state.sort = e.target.value; renderProducts(); });
+  grid.addEventListener('click', e => {
+    const b = e.target.closest('[data-add]'); if (b) addToCart(Number(b.dataset.add));
+  });
+  cartItems.addEventListener('click', e => {
+    const t = e.target.closest('button'); if (!t) return;
+    if (t.dataset.inc) updateQuantity(Number(t.dataset.inc), 1);
+    else if (t.dataset.dec) updateQuantity(Number(t.dataset.dec), -1);
+    else if (t.dataset.rm) removeFromCart(Number(t.dataset.rm));
+  });
+  $('openCart').onclick = openDrawer;
+  $('closeCart').onclick = closeDrawer;
+  overlay.onclick = closeDrawer;
+  $('clearCart').onclick = () => { state.cart = []; saveCart(); renderCart(); };
+  $('checkoutBtn').onclick = () => { if (state.cart.length) openCheckout(); };
+  modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape'){ closeModal(); closeDrawer(); } });
+
+  /* ---------- Init ---------- */
+  renderCart();
+  fetchProducts();
+})();
+</script>
+</body>
+</html>
